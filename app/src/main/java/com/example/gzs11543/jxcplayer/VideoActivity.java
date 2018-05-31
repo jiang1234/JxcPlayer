@@ -101,6 +101,21 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        if(!isPortrait()){
+            orientationDetector.toggleScreen(false);
+        }else{
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        jxcPlayer.onResume();
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
         orientationDetector.start(this);
@@ -111,5 +126,6 @@ public class VideoActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         orientationDetector.stop();
+        jxcPlayer.onStop();
     }
 }

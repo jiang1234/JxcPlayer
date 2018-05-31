@@ -6,12 +6,15 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import com.example.player.player.widget.VideoControllerView;
+
 public class NetworkBroadcastReceiver extends BroadcastReceiver {
     public final static int INTERENT_UNKNOWN = -1;
     public final static int NO_INTERNET = 0;
     public final static int INTERENT_STATE_WIFI = 1;
     public final static int INTERENT_STATE_MOBILE = 2;
     private int networkState;
+    private VideoControllerView videoControllerView;
     @Override
     public void onReceive(Context context, Intent intent) {
         networkState = INTERENT_UNKNOWN;
@@ -26,7 +29,10 @@ public class NetworkBroadcastReceiver extends BroadcastReceiver {
         }else{
             networkState = NO_INTERNET;
         }
-        Intent netIntent = intent.putExtra("NET_TYPE",networkState);
+        videoControllerView.networkStateChanged(networkState);
+    }
 
+    public void setVideoControllerView(VideoControllerView videoControllerView) {
+        this.videoControllerView = videoControllerView;
     }
 }

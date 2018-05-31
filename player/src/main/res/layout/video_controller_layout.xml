@@ -12,7 +12,11 @@
                android:src="#000000"
                android:id="@+id/cover"
     />
-
+    <com.example.player.player.widget.VideoErrorView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/controller_error"
+        />
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -29,6 +33,7 @@
                      android:layout_centerInParent="true"
                      android:visibility="visible"
         />
+
         <ImageButton android:layout_width="50dp"
                      android:layout_height="50dp"
                      android:background="@drawable/restart"

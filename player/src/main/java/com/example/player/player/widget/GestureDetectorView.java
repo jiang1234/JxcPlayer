@@ -1,4 +1,4 @@
-package com.example.player.player.weidge;
+package com.example.player.player.widget;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

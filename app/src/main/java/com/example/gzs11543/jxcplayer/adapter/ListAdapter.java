@@ -71,9 +71,8 @@ public class ListAdapter extends RecyclerView.Adapter{
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         InfoBean infoBean = mInfoList.get(position);
         InfoViewHolder infoViewHolder = (InfoViewHolder) holder;
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,MyApplication.getHeight()/5);
-        infoViewHolder.cover.setLayoutParams(params);
-        ImageLoaderUtil.glideImageLoader(mContext,infoBean.getCover(),infoViewHolder.cover);
+
+        ImageLoaderUtil.glideImageLoader(mContext,infoBean.getCover(),infoViewHolder.cover,16,9);
         infoViewHolder.duration.setText(infoBean.getDuration());
         infoViewHolder.title.setText(infoBean.getTitle());
 

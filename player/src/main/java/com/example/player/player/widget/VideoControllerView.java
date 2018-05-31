@@ -1,18 +1,13 @@
-package com.example.player.player.weidge;
+package com.example.player.player.widget;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -22,6 +17,7 @@ import android.widget.TextView;
 import com.example.player.R;
 import com.example.player.player.JxcPlayer;
 import com.example.player.player.listener.VideoControlListener;
+import com.example.player.player.receiver.NetworkBroadcastReceiver;
 import com.example.player.player.util.ImageLoaderUtil;
 import com.example.player.player.util.StringUtil;
 import com.example.player.player.util.ViewSizeUtil;
@@ -29,7 +25,7 @@ import com.example.player.player.util.ViewSizeUtil;
 
 public class VideoControllerView extends FrameLayout {
     private static final String TAG = "VideoControllerView";
-    private static final int DEFAULT_CONTROLLER_SHOW_TIME = 3000;
+    public static final int DEFAULT_CONTROLLER_SHOW_TIME = 3000;
     private ImageButton playButton;
     private ImageButton centerPlayButton;
     private SeekBar seekBar;
@@ -39,6 +35,7 @@ public class VideoControllerView extends FrameLayout {
     private ImageButton reStartButton;
     private TextView finishTextView;
     private View controllerBackground;
+    private VideoErrorView videoErrorView;
     private int seekBarMax;
     private boolean isStart;
     private String cover;
@@ -48,10 +45,12 @@ public class VideoControllerView extends FrameLayout {
     private int position;
     private boolean isPortrait;
 
+
     // private int bufferPercentage;
     private int duration;
 
     private boolean isControllerBottomShow;
+    private int errorType;
 
 
     public VideoControllerView(@NonNull Context context) {
@@ -75,7 +74,7 @@ public class VideoControllerView extends FrameLayout {
         videoControllerBottom = (View)findViewById(R.id.video_controller_bottom);
         durationTextView = (TextView)findViewById(R.id.duration);
         controllerBackground = (View) findViewById(R.id.controller_background);
-
+        videoErrorView = (VideoErrorView)findViewById(R.id.controller_error);
     }
 
 
@@ -110,6 +109,8 @@ public class VideoControllerView extends FrameLayout {
                 public void onStartTrackingTouch(SeekBar seekBar) {
                     //停止定时功能
                     removeCallbacks(showRunnable);
+                    removeCallbacks(hideRunnable);
+                    videoControllerBottom.setVisibility(View.VISIBLE);
                     isControllerBottomShow = true;
 
                 }
@@ -120,7 +121,7 @@ public class VideoControllerView extends FrameLayout {
                     Log.i(TAG, "onStopTrackingTouch: "+StringUtil.stringToTime(seekBar.getProgress()));
                     //将seekBar的position传递给player
                     videoControlListener.seekVideo(seekBar.getProgress());
-                    //showController(DEFAULT_CONTROLLER_SHOW_TIME);
+                    //showControllerBottom(DEFAULT_CONTROLLER_SHOW_TIME);
 
                 }
             });
@@ -175,6 +176,7 @@ public class VideoControllerView extends FrameLayout {
 
     public void setOnVideoControllerView(VideoControlListener videoControlListener) {
         this.videoControlListener = videoControlListener;
+        videoErrorView.setVideoControlListener(videoControlListener);
     }
 
     public void setSeekBarMax(int seekBarMax) {
@@ -195,7 +197,6 @@ public class VideoControllerView extends FrameLayout {
         String durationTime = StringUtil.stringToTime(position) + "/" + StringUtil.stringToTime(duration);
        // Log.i(TAG, "updatePosition: position" +StringUtil.stringToTime(position) +"duration"+ "/" + StringUtil.stringToTime(duration));
         durationTextView.setText(durationTime);
-
     }
 
     public void hideStartView(){
@@ -204,7 +205,7 @@ public class VideoControllerView extends FrameLayout {
         controllerBackground.setVisibility(View.GONE);
     }
     public void showFinishView(){
-        hideController();
+        hideControllerBottom();
         controllerBackground.setVisibility(View.VISIBLE);
         reStartButton.setVisibility(View.VISIBLE);
         finishTextView.setVisibility(View.VISIBLE);
@@ -217,7 +218,7 @@ public class VideoControllerView extends FrameLayout {
         controllerBackground.setVisibility(View.GONE);
     }
 
-    public void showController(int time){
+    public void showControllerBottom(int time){
         if(videoControllerBottom.getVisibility() != View.VISIBLE){
             videoControllerBottom.setVisibility(View.VISIBLE);
         }
@@ -228,7 +229,7 @@ public class VideoControllerView extends FrameLayout {
         }
     }
 
-    public void hideController(){
+    public void hideControllerBottom(){
         removeCallbacks(showRunnable);
         post(hideRunnable);
     }
@@ -284,5 +285,50 @@ public class VideoControllerView extends FrameLayout {
 
     public void setPortrait(boolean portrait) {
         isPortrait = portrait;
+    }
+
+    public void networkStateChanged(int networkState){
+
+        videoErrorView.setNetworkState(networkState);
+        Log.i(TAG, "networkStateChanged: networkState = " + networkState);
+        if(networkState == NetworkBroadcastReceiver.NO_INTERNET){
+            //没有网络直接提出无网络并显示错误信息,停止播放
+            videoControlListener.stopVideo();
+            videoErrorView.changeErrorView(VideoErrorView.ERROR_TYPE_NO_INTERNET);
+            hideControllerView();
+        }else if(networkState == NetworkBroadcastReceiver.INTERENT_STATE_MOBILE){
+            if(videoErrorView.getErrorType() == VideoErrorView.NO_ERROR){
+                //网络状态从wifi转为移动
+                videoControlListener.pauseVideo();
+                videoErrorView.changeErrorView(VideoErrorView.ERROR_TYPE_MOBILE_INTERNET);
+            }
+        }
+
+    }
+
+    public void showError(){
+        hideControllerView();
+        videoErrorView.changeErrorView(VideoErrorView.ERROR_TYPE_OTHER_ERROR);
+    }
+    public void hideControllerView(){
+        if(centerPlayButton.getVisibility() == View.VISIBLE){
+            centerPlayButton.setVisibility(View.GONE);
+        }
+        hideFinishView();
+        hideControllerBottom();
+        removeCallbacks(showRunnable);
+        videoControllerBottom.setVisibility(GONE);
+    };
+    public int getErrorType() {
+        return videoErrorView.getErrorType();
+    }
+
+    public void changePlayButtonView(boolean isStart){
+        this.isStart = isStart;
+        if(isStart){
+            playButton.setBackgroundResource(R.drawable.pause);
+        }else{
+            playButton.setBackgroundResource(R.drawable.play);
+        }
     }
 }

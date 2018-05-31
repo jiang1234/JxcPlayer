@@ -9,5 +9,6 @@ public interface VideoControlListener {
     void updateVideoPosition();
     //void updateSeekPosition();
     void restartVideo();
+    //void resetVideo();
     void toggleScreen(boolean isPortrait);
 }

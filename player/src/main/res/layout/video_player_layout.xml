@@ -15,7 +15,7 @@
         />
 
 
-        <com.example.player.player.weidge.VideoControllerView
+        <com.example.player.player.widget.VideoControllerView
         android:id="@+id/video_controller"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

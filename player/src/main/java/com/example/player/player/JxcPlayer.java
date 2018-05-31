@@ -3,9 +3,7 @@ package com.example.player.player;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.media.MediaPlayer;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -17,10 +15,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 
 
 import com.example.player.R;
@@ -29,7 +24,8 @@ import com.example.player.player.listener.VideoControlListener;
 import com.example.player.player.receiver.NetworkBroadcastReceiver;
 import com.example.player.player.util.StringUtil;
 import com.example.player.player.util.ViewSizeUtil;
-import com.example.player.player.weidge.VideoControllerView;
+import com.example.player.player.widget.VideoControllerView;
+import com.example.player.player.widget.VideoErrorView;
 
 import java.io.IOException;
 
@@ -44,21 +40,21 @@ import java.io.IOException;
 public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestureListener{
     private static final String TAG = "JxcPlayer";
 
-    private static final int DEFAULT_CONTROLLER_SHOW_TIME = 3000;
     private static final int STATE_VIEW_VERTICAL = 0;
     private static final int STATE_VIEW_HORIZONTAL = 1;
     private static final int STATE_SURFACEVIEW_CREATE = 2;
-    private static final int STATE_PLAYER_IDLE = 3;
-    private static final int STATE_PLAYER_PEEPARING = 4;
-    private static final int STATE_PLAYER_ERROR = 5;
-    private static final int STATE_PLAYER_SEEK = 6;
-    private static final int STATE_PLAYER_STOP = 7;
-    private static final int STATE_PLAYER_PREPARED = 8;
-    private static final int STATE_PLAYER_COMPLETE = 9;
+    private static final int STATE_SURFACEVIEW_DESTROY = 3;
+    private static final int STATE_PLAYER_IDLE = 4;
+    private static final int STATE_PLAYER_PEEPARING = 5;
+    private static final int STATE_PLAYER_ERROR = 6;
+    private static final int STATE_PLAYER_SEEK = 7;
+    private static final int STATE_PLAYER_STOP = 8;
+    private static final int STATE_PLAYER_PREPARED = 9;
+    private static final int STATE_PLAYER_COMPLETE = 10;
 
 
-    private static final int STATE_PLAYER_PAUSE = 8;
-    private static final int STATE_PLAYER_PLAY = 9;
+    private static final int STATE_PLAYER_PAUSE = 11;
+    private static final int STATE_PLAYER_PLAY = 12;
     private boolean isPortrait;
 
     private SurfaceView surfaceView;
@@ -82,6 +78,8 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
     private Canvas canvas;
     private int videoWidth;
     private int videoHeight;
+    private boolean isInBackground;
+    private boolean isPause;
     private PlayerListener playerListener;
     private NetworkBroadcastReceiver netBroadcastReceiver;
 
@@ -106,6 +104,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
     public void init(){
         initPlayer();
+        createSurface();
         //videoControllerView = new VideoControllerView(getContext());
         videoControllerView.setCover(cover);
         videoControllerView.setPortrait(isPortrait);
@@ -125,12 +124,16 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             public void pauseVideo() {
                 if(playerState == STATE_PLAYER_PLAY){
                     pause();
+                    isPause = true;
                 }
+
             }
 
             @Override
             public void stopVideo() {
-
+                if(playerState == STATE_PLAYER_PLAY){
+                    stop();
+                }
             }
 
             @Override
@@ -144,56 +147,36 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
                 //if(canSeek()){
                 //播放器跳转
                 Log.i(TAG, "seekVideo: seekBar = " + StringUtil.stringToTime(progress));
-                    player.seekTo(progress);
+                   // player.seekTo(progress);
+                seekTo(progress);
 
             }
             @Override
             public void updateVideoPosition(){
-                position = player.getCurrentPosition();
-                videoControllerView.setPosition(position);
+                if(playerState == STATE_PLAYER_PLAY || playerState == STATE_PLAYER_PAUSE){
+                    position = player.getCurrentPosition();
+                    videoControllerView.setPosition(position);
+                }
+
                 //videoControllerView.setBufferPercentage(bufferPercentage);
             }
 
             @Override
             public void restartVideo(){
-                initPlayer();
-                prepare();
+                restart();
             }
 
             @Override
             public void toggleScreen(boolean isPortrait){
                 playerListener.toggleScreen(isPortrait);
-                videoControllerView.showController(DEFAULT_CONTROLLER_SHOW_TIME);
+                videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
             }
 
         });
 
-        if(surfaceView != null){
-            Log.i(TAG, "init: videoWidth = "+videoWidth+"videoHeight = "+videoHeight );
-
-            holder = surfaceView.getHolder();
-            holder.addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(SurfaceHolder holder) {
-                    setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
-                    //drawCover(bitmap);
-
-                }
-
-                @Override
-                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-                }
-
-                @Override
-                public void surfaceDestroyed(SurfaceHolder holder) {
-                    position = player.getCurrentPosition();
-
-                }
-            });
-        }
 
 
+        registerNetBroadcastReceiver(getContext());
 
     }
     public void initPlayer(){
@@ -205,27 +188,33 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             @Override
             public void onPrepared(MediaPlayer mp) {
                 setPlayerState(STATE_PLAYER_PREPARED);
-                //在这里要停止视频加载动画
                 player.setDisplay(holder);
                 duration = player.getDuration();
                 videoControllerView.setSeekBarMax(duration);
-                play();
-
+                if(!isPause){
+                    play();
+                }
             }
         });
 
         player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                setPlayerState(STATE_PLAYER_COMPLETE);
-                videoControllerView.showFinishView();
+                Log.i(TAG, "onCompletion: 2");
+                if(playerState != STATE_PLAYER_ERROR){
+                    setPlayerState(STATE_PLAYER_COMPLETE);
+                    videoControllerView.showFinishView();
+                }
             }
         });
 
         player.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
+                Log.i(TAG, "onError: what=" + what +"extra="+extra);
                 setPlayerState(STATE_PLAYER_ERROR);
+                loadingView.setVisibility(GONE);
+                videoControllerView.showError();
                 return false;
             }
         });
@@ -237,9 +226,11 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
                 //play();
 
                 //position = mp.getCurrentPosition();
+                //position = 0;
                 Log.i(TAG, "onSeekComplete: =" + StringUtil.stringToTime(position));
-                videoControllerView.showController(DEFAULT_CONTROLLER_SHOW_TIME);
+                videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
                 //play();
+                setPlayerState(STATE_PLAYER_PLAY);
 
 
             }
@@ -273,15 +264,54 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             }
         });
     }
+
+    public void createSurface(){
+        if(surfaceView != null){
+            Log.i(TAG, "init: videoWidth = "+videoWidth+"videoHeight = "+videoHeight );
+
+            holder = surfaceView.getHolder();
+            holder.addCallback(new SurfaceHolder.Callback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
+                    //drawCover(bitmap);
+
+                }
+
+                @Override
+                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+                }
+
+                @Override
+                public void surfaceDestroyed(SurfaceHolder holder) {
+
+                    //activity切到后台之后会调用
+                    if(playerState == STATE_PLAYER_PLAY){
+                        position = player.getCurrentPosition();
+                        Log.i(TAG, "surfaceDestroyed: position=" + position);
+                        stop();//在此释放了player
+                    }
+                    Log.i(TAG, "surfaceDestroyed: position=" + position);
+                    setSurfaceViewState(STATE_SURFACEVIEW_DESTROY);
+                }
+            });
+        }
+    }
     //播放
     public void play(){
         setPlayerState(STATE_PLAYER_PLAY);
+        isPause = false;
+        if(position != 0 && position != duration){
+            player.seekTo(position);
+        }
         player.start();
     }
 
     //暂停
     public void pause(){
         setPlayerState(STATE_PLAYER_PAUSE);
+        position = player.getCurrentPosition();
         player.pause();
     }
 
@@ -290,8 +320,20 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         if(player != null && player.isPlaying()){
             player.stop();
             player.release();
+
             player = null;
         }
+//        surfaceView.setVisibility(View.GONE);
+        setPlayerState(STATE_PLAYER_STOP);
+    }
+
+    public void seekTo(int position){
+        player.seekTo(position);
+        if(playerState == STATE_PLAYER_PAUSE){
+            player.start();
+            videoControllerView.changePlayButtonView(true);
+        }
+        setPlayerState(STATE_PLAYER_SEEK);
     }
 
     public void prepare() {
@@ -309,9 +351,14 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
     public void reset(){
         if (player != null){
             player.reset();
-            player.release();
+            //player.release();
             setPlayerState(STATE_PLAYER_IDLE);
         }
+    }
+
+    public void restart(){
+        initPlayer();
+        prepare();
     }
 
 
@@ -329,7 +376,13 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
                 break;
             case STATE_PLAYER_PREPARED:
                 loadingView.setVisibility(View.GONE);
-                videoControllerView.showController(DEFAULT_CONTROLLER_SHOW_TIME);
+                videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
+                break;
+            case STATE_PLAYER_PAUSE:
+                position = player.getCurrentPosition();
+                break;
+            case STATE_PLAYER_COMPLETE:
+                position = duration;
                 break;
             default:
                 break;
@@ -394,9 +447,9 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         Log.i(TAG, "onSingleTapUp:s");
         if(playerState >= STATE_PLAYER_PREPARED){
             if(videoControllerView.isControllerBottomShow()){
-                videoControllerView.hideController();
+                videoControllerView.hideControllerBottom();
             }else {
-                videoControllerView.showController(DEFAULT_CONTROLLER_SHOW_TIME);
+                videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
                 //videoControllerView.setPosition(player.getCurrentPosition());
                 //videoControllerView.setBufferPosition(bufferPercentage);
             }
@@ -454,13 +507,40 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
     }
 
     public void registerNetBroadcastReceiver(Context context){
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-        netBroadcastReceiver = new NetworkBroadcastReceiver();
-        context.registerReceiver(netBroadcastReceiver,intentFilter);
+        if(netBroadcastReceiver == null){
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+            netBroadcastReceiver = new NetworkBroadcastReceiver();
+            netBroadcastReceiver.setVideoControllerView(videoControllerView);
+            context.registerReceiver(netBroadcastReceiver,intentFilter);
+        }
+
     }
 
     public void unregisterNetBroadcastReceiver(Context context){
-        context.unregisterReceiver(netBroadcastReceiver);
+        if(netBroadcastReceiver != null){
+            context.unregisterReceiver(netBroadcastReceiver);
+        }
+        netBroadcastReceiver = null;
+    }
+
+    public void onResume(){
+        registerNetBroadcastReceiver(getContext());
+        if(isInBackground && videoControllerView.getErrorType() == VideoErrorView.NO_ERROR && (playerState == STATE_PLAYER_STOP ||playerState == STATE_PLAYER_PAUSE)){
+            //createSurface();
+            restart();
+        }
+        Log.i(TAG, "onResume: position = "+position);
+        isInBackground = false;
+    }
+
+    public void onStop(){
+        isInBackground = true;
+        unregisterNetBroadcastReceiver(getContext());
+    }
+    public void onDestroy(){
+        player.stop();
+        player.release();
+        unregisterNetBroadcastReceiver(getContext());
     }
 }
