@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:layout_centerInParent="true"
+                >
+
+    <ImageView android:layout_width="match_parent"
+               android:layout_height="match_parent"
+               android:layout_gravity="center"
+               android:src="#000000"
+               android:id="@+id/cover"
+    />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:alpha="0.5"
+        android:orientation="vertical"
+        android:id="@+id/controller_background"
+    >
+        <ImageButton android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:background="@drawable/play"
+                     android:id="@+id/play_center"
+                     android:layout_gravity="center"
+                     android:layout_centerInParent="true"
+                     android:visibility="visible"
+        />
+        <ImageButton android:layout_width="50dp"
+                     android:layout_height="50dp"
+                     android:background="@drawable/restart"
+                     android:id="@+id/restart"
+                     android:layout_centerInParent="true"
+                     android:visibility="gone"
+
+
+        />
+        <TextView android:id="@+id/finish"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_below="@+id/restart"
+                  android:layout_centerHorizontal="true"
+                  android:text="@string/finish"
+                  android:textColor="#FFFFFF"
+                  android:visibility="gone"/>
+    </RelativeLayout>
+
+
+    <include
+        android:id="@+id/video_controller_bottom"
+        layout="@layout/video_controller_bottom"
+        android:layout_gravity="bottom"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"/>
+
+
+</FrameLayout>

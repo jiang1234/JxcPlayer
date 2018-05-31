@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">JxcPlayer</string>
+    <string name="loading">加载中</string>
+    <string name="finish">重播</string>
+</resources>
