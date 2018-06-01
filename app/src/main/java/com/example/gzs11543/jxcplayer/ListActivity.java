@@ -1,11 +1,8 @@
 package com.example.gzs11543.jxcplayer;
 
-import android.nfc.Tag;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 import com.example.gzs11543.jxcplayer.adapter.ListAdapter;
@@ -59,7 +56,6 @@ public class ListActivity extends BaseActivity<ListPresenter>{
                     }else{
                         isLoadMore = true;
                         presenter.getVideoList(pageId+"");
-                        //presenter.getVideoList(pageId+"100");
                         pageId++;
                     }
 
@@ -71,7 +67,6 @@ public class ListActivity extends BaseActivity<ListPresenter>{
     @Override
     public void initData() {
         presenter.getVideoList(pageId+"");
-        //presenter.getVideoList("100");
         pageId++;
 
     }

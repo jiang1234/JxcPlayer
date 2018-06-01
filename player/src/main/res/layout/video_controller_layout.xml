@@ -12,6 +12,25 @@
                android:src="#000000"
                android:id="@+id/cover"
     />
+
+    <com.example.player.player.widget.VideoVolumeView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:id="@+id/video_volume_view_gesture"/>
+    <com.example.player.player.widget.VideoBrightnessView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:id="@+id/video_brightness_view_gesture"/>
+    <com.example.player.player.widget.VideoGestureProgressView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:id="@+id/gesture_progress"
+    />
+
+
     <com.example.player.player.widget.VideoErrorView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -52,6 +71,7 @@
                   android:textColor="#FFFFFF"
                   android:visibility="gone"/>
     </RelativeLayout>
+
 
 
     <include

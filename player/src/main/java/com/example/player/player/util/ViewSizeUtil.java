@@ -14,8 +14,7 @@ import android.widget.RelativeLayout;
 
 
 public class ViewSizeUtil {
-    private static final int STATE_VIEW_VERTICAL = 0;
-    private static final int STATE_VIEW_HORIZONTAL = 1;
+
     public static int getScreenWidth(Context context){
         Resources resources = context.getResources();
         DisplayMetrics dm = resources.getDisplayMetrics();

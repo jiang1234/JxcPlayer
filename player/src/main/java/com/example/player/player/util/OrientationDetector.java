@@ -112,13 +112,6 @@ public class OrientationDetector {
         activity = null;
         orientationRotateListener.disable();
     }
-    public int getOrientationType() {
-        return orientationType;
-    }
-
-    public void setOrientationType(int orientationType) {
-        this.orientationType = orientationType;
-    }
 
     public void changeOrientation(int orientationType){
         if(isPrepared){
@@ -167,15 +160,11 @@ public class OrientationDetector {
         this.isFullScreenButton = isFullScreenButton;
     }
 
-    public boolean isPortrait(){
+    public static boolean isPortrait(Context context){
         if( context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
             return true;
         }
         return false;
-    }
-
-    public boolean isFullScreenButton() {
-        return isFullScreenButton;
     }
 
     public void setFullScreenButton(boolean fullScreenButton) {

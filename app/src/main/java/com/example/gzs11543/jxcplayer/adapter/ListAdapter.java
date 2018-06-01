@@ -1,5 +1,4 @@
 package com.example.gzs11543.jxcplayer.adapter;
-
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,18 +7,12 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
-
-import com.example.gzs11543.jxcplayer.MyApplication;
 import com.example.gzs11543.jxcplayer.R;
 import com.example.gzs11543.jxcplayer.VideoActivity;
 import com.example.gzs11543.jxcplayer.bean.InfoBean;
 import com.example.gzs11543.jxcplayer.util.ImageLoaderUtil;
-import com.example.gzs11543.jxcplayer.util.decodeUnicode;
-
 import java.util.List;
 
 import butterknife.BindView;

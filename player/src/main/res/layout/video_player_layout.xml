@@ -20,11 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignBottom="@+id/videoPlayer"
-
-
         />
-
-
     <include
         android:id="@+id/video_loading"
         layout="@layout/video_loading_view"

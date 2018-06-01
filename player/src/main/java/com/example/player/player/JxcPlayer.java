@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -26,6 +27,7 @@ import com.example.player.player.util.StringUtil;
 import com.example.player.player.util.ViewSizeUtil;
 import com.example.player.player.widget.VideoControllerView;
 import com.example.player.player.widget.VideoErrorView;
+import com.example.player.player.widget.VideoVolumeView;
 
 import java.io.IOException;
 
@@ -37,42 +39,26 @@ import java.io.IOException;
  * @date 2018/5/25
  *
  */
-public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestureListener{
+public class JxcPlayer extends RelativeLayout {
     private static final String TAG = "JxcPlayer";
-
-    private static final int STATE_VIEW_VERTICAL = 0;
-    private static final int STATE_VIEW_HORIZONTAL = 1;
-    private static final int STATE_SURFACEVIEW_CREATE = 2;
-    private static final int STATE_SURFACEVIEW_DESTROY = 3;
-    private static final int STATE_PLAYER_IDLE = 4;
-    private static final int STATE_PLAYER_PEEPARING = 5;
-    private static final int STATE_PLAYER_ERROR = 6;
-    private static final int STATE_PLAYER_SEEK = 7;
-    private static final int STATE_PLAYER_STOP = 8;
-    private static final int STATE_PLAYER_PREPARED = 9;
-    private static final int STATE_PLAYER_COMPLETE = 10;
-
-
-    private static final int STATE_PLAYER_PAUSE = 11;
-    private static final int STATE_PLAYER_PLAY = 12;
+    public static final int STATE_PLAYER_IDLE = 0;
+    public static final int STATE_PLAYER_PEEPARING = 1;
+    public static final int STATE_PLAYER_ERROR = 2;
+    public static final int STATE_PLAYER_SEEK = 3;
+    public static final int STATE_PLAYER_STOP = 4;
+    public static final int STATE_PLAYER_PREPARED = 5;
+    public static final int STATE_PLAYER_COMPLETE = 6;
+    public static final int STATE_PLAYER_PAUSE = 7;
+    public static final int STATE_PLAYER_PLAY = 8;
     private boolean isPortrait;
-
     private SurfaceView surfaceView;
     private MediaPlayer player;
     private SurfaceHolder holder;
     private VideoControllerView videoControllerView;
     private View loadingView;
-    private GestureDetector detector;
-
-
-
-
     private String videoPath;
     private int playerState;
-    private int surfaceViewState;
-    private int viewState;
     private int position;
-    //private int bufferPercentage;
     private int duration;
     private String cover;
     private Canvas canvas;
@@ -97,8 +83,6 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         surfaceView = (SurfaceView)findViewById(R.id.videoPlayer);
         videoControllerView = (VideoControllerView)findViewById(R.id.video_controller);
         loadingView = (View)findViewById(R.id.video_loading);
-        detector = new GestureDetector(getContext(),this);
-
     }
 
 
@@ -114,6 +98,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         videoControllerView.setOnVideoControllerView(new VideoControlListener() {
             @Override
             public void startVideo() {
+                Log.i(TAG, "startVideo: ");
                 if(playerState == STATE_PLAYER_PREPARED || playerState == STATE_PLAYER_PAUSE){
                     play();
 
@@ -122,6 +107,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
             @Override
             public void pauseVideo() {
+                Log.i(TAG, "pauseVideo: ");
                 if(playerState == STATE_PLAYER_PLAY){
                     pause();
                     isPause = true;
@@ -131,6 +117,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
             @Override
             public void stopVideo() {
+                Log.i(TAG, "stopVideo: ");
                 if(playerState == STATE_PLAYER_PLAY){
                     stop();
                 }
@@ -138,6 +125,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
             @Override
             public void prepareVideo() {
+                Log.i(TAG, "prepareVideo: ");
                 prepare();
                 playerListener.isPlayerPrepare();
             }
@@ -153,6 +141,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             }
             @Override
             public void updateVideoPosition(){
+                Log.i(TAG, "updateVideoPosition: ");
                 if(playerState == STATE_PLAYER_PLAY || playerState == STATE_PLAYER_PAUSE){
                     position = player.getCurrentPosition();
                     videoControllerView.setPosition(position);
@@ -163,15 +152,29 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
             @Override
             public void restartVideo(){
+                Log.i(TAG, "restartVideo: ");
                 restart();
             }
 
             @Override
             public void toggleScreen(boolean isPortrait){
+                Log.i(TAG, "toggleScreen: ");
                 playerListener.toggleScreen(isPortrait);
                 videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
             }
 
+            @Override
+            public void controllerBottom(){
+                Log.i(TAG, "controllerBottom: ");
+                if(playerState == STATE_PLAYER_PREPARED || playerState == STATE_PLAYER_PLAY || playerState == STATE_PLAYER_PAUSE){
+                    videoControllerView.controllerBottom();
+                }
+            }
+
+            @Override
+            public int getPlayerState() {
+                return playerState;
+            }
         });
 
 
@@ -179,6 +182,10 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         registerNetBroadcastReceiver(getContext());
 
     }
+
+    /**
+     * 播放器初始化
+     */
     public void initPlayer(){
         reset();
 
@@ -189,6 +196,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             public void onPrepared(MediaPlayer mp) {
                 setPlayerState(STATE_PLAYER_PREPARED);
                 player.setDisplay(holder);
+                Log.i(TAG, "onPrepared:getDuration getDuration getDurationgetDuration ");
                 duration = player.getDuration();
                 videoControllerView.setSeekBarMax(duration);
                 if(!isPause){
@@ -265,6 +273,9 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         });
     }
 
+    /**
+     * 创建surfaceView
+     */
     public void createSurface(){
         if(surfaceView != null){
             Log.i(TAG, "init: videoWidth = "+videoWidth+"videoHeight = "+videoHeight );
@@ -273,7 +284,7 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
             holder.addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
-                    setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
+                    //setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
                     //drawCover(bitmap);
 
                 }
@@ -293,12 +304,15 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
                         stop();//在此释放了player
                     }
                     Log.i(TAG, "surfaceDestroyed: position=" + position);
-                    setSurfaceViewState(STATE_SURFACEVIEW_DESTROY);
+                    //setSurfaceViewState(STATE_SURFACEVIEW_DESTROY);
                 }
             });
         }
     }
-    //播放
+
+    /**
+     * 播放视频相关操作
+     */
     public void play(){
         setPlayerState(STATE_PLAYER_PLAY);
         isPause = false;
@@ -308,14 +322,12 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         player.start();
     }
 
-    //暂停
     public void pause(){
         setPlayerState(STATE_PLAYER_PAUSE);
         position = player.getCurrentPosition();
         player.pause();
     }
 
-    //停止播放
     public void stop(){
         if(player != null && player.isPlaying()){
             player.stop();
@@ -323,7 +335,6 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
 
             player = null;
         }
-//        surfaceView.setVisibility(View.GONE);
         setPlayerState(STATE_PLAYER_STOP);
     }
 
@@ -341,17 +352,20 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         ViewSizeUtil.changeSurfaceViewSize(getContext(),surfaceView,isPortrait,videoWidth,videoHeight);
         try {
             player.setDataSource(videoPath);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+        muteAudioFocus(getContext(),true);
         player.prepareAsync();
         setPlayerState(STATE_PLAYER_PEEPARING);
     }
 
+
     public void reset(){
         if (player != null){
             player.reset();
-            //player.release();
+            player.release();
             setPlayerState(STATE_PLAYER_IDLE);
         }
     }
@@ -361,14 +375,82 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         prepare();
     }
 
+    /**
+     * 根据重力感应切换相应布局
+     * @param newConfig
+     */
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        //切换横竖屏布局
+        if(newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+            isPortrait = true;
+        }else{
+            isPortrait = false;
 
-
-    //
-    public int getPlayerState() {
-        return playerState;
+        }
+        ViewSizeUtil.changeSurfaceViewSize(getContext(),surfaceView,isPortrait,videoWidth,videoHeight);
     }
 
+
+
+    /**
+     * 注册网络广播
+     * @param context
+     */
+    public void registerNetBroadcastReceiver(Context context){
+        if(netBroadcastReceiver == null){
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+            netBroadcastReceiver = new NetworkBroadcastReceiver();
+            netBroadcastReceiver.setVideoControllerView(videoControllerView);
+            context.registerReceiver(netBroadcastReceiver,intentFilter);
+        }
+
+    }
+
+    /**
+     * 注销网络广播
+     * @param context
+     */
+    public void unregisterNetBroadcastReceiver(Context context){
+        if(netBroadcastReceiver != null){
+            context.unregisterReceiver(netBroadcastReceiver);
+        }
+        netBroadcastReceiver = null;
+    }
+
+    /**
+     * 生命周期相关
+     */
+    public void onResume(){
+        registerNetBroadcastReceiver(getContext());
+        if(isInBackground && videoControllerView.getErrorType() == VideoErrorView.NO_ERROR && (playerState == STATE_PLAYER_STOP ||playerState == STATE_PLAYER_PAUSE)){
+            restart();
+        }
+        Log.i(TAG, "onResume: position = "+position);
+        isInBackground = false;
+    }
+
+    public void onStop(){
+        isInBackground = true;
+        muteAudioFocus(getContext(),false);
+        unregisterNetBroadcastReceiver(getContext());
+    }
+    public void onDestroy(){
+        if(player != null){
+            player.stop();
+            player.release();
+        }
+        player = null;
+        unregisterNetBroadcastReceiver(getContext());
+    }
+
+    /**
+     * 变量设置
+     */
     public void setPlayerState(int playerState) {
+        Log.i(TAG, "setPlayerState: " + playerState);
         this.playerState = playerState;
         switch (playerState){
             case STATE_PLAYER_PEEPARING:
@@ -389,33 +471,8 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         }
     }
 
-    public int getSurfaceViewState() {
-        return surfaceViewState;
-    }
-
-    public void setSurfaceViewState(int surfaceViewState) {
-        surfaceViewState = surfaceViewState;
-    }
-
-    public boolean canSeek(){
-        return player != null && getPlayerState() >= STATE_PLAYER_PREPARED;
-    }
-
     public void setVideoPath(String videoPath) {
         this.videoPath = videoPath;
-    }
-
-
-    public void setSurfaceView(SurfaceView surfaceView) {
-        surfaceView = surfaceView;
-    }
-
-    public int getViewState() {
-        return viewState;
-    }
-
-    public void setViewState(int viewState) {
-        viewState = viewState;
     }
 
     public void setVideoSize(int videoWidth,int videoHeight){
@@ -427,120 +484,28 @@ public class JxcPlayer extends RelativeLayout implements GestureDetector.OnGestu
         this.cover = cover;
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event){
-        return detector.onTouchEvent(event);
-    }
-    @Override
-    public boolean onDown(MotionEvent e) {
-        return true;
-    }
-
-    @Override
-    public void onShowPress(MotionEvent e) {
-
-    }
-
-    //
-    @Override
-    public boolean onSingleTapUp(MotionEvent e) {
-        Log.i(TAG, "onSingleTapUp:s");
-        if(playerState >= STATE_PLAYER_PREPARED){
-            if(videoControllerView.isControllerBottomShow()){
-                videoControllerView.hideControllerBottom();
-            }else {
-                videoControllerView.showControllerBottom(VideoControllerView.DEFAULT_CONTROLLER_SHOW_TIME);
-                //videoControllerView.setPosition(player.getCurrentPosition());
-                //videoControllerView.setBufferPosition(bufferPercentage);
-            }
-        }
-        return true;
-    }
-
-    //轻击屏幕唤醒控制条
-    @Override
-    public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-        
-        return false;
-    }
-
-    @Override
-    public void onLongPress(MotionEvent e) {
-
-    }
-
-    @Override
-    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        return false;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public boolean isPlayFinish(int progress){
-        return progress == duration;
-    }
-
     public void setPlayerListener(PlayerListener playerListener) {
         this.playerListener = playerListener;
-    }
-
-    @Override
-    protected void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        //切换横竖屏布局
-        if(newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
-            isPortrait = true;
-        }else{
-            //setVideoState(STATE_VIEW_HORIZONTAL);
-            isPortrait = false;
-
-        }
-        ViewSizeUtil.changeSurfaceViewSize(getContext(),surfaceView,isPortrait,videoWidth,videoHeight);
-        //getLayoutParams().width = RelativeLayout.LayoutParams.MATCH_PARENT;
-        //getLayoutParams().height = RelativeLayout.LayoutParams.MATCH_PARENT;
     }
 
     public void setPortrait(boolean portrait) {
         isPortrait = portrait;
     }
 
-    public void registerNetBroadcastReceiver(Context context){
-        if(netBroadcastReceiver == null){
-            IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-            netBroadcastReceiver = new NetworkBroadcastReceiver();
-            netBroadcastReceiver.setVideoControllerView(videoControllerView);
-            context.registerReceiver(netBroadcastReceiver,intentFilter);
+    /**
+     * 请求音频焦点
+     * @param context
+     * @param bMute
+     * @return
+     */
+    public static boolean muteAudioFocus(Context context, boolean bMute) {
+        AudioManager audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        int result = -1;
+        if(bMute){
+            result = audioManager.requestAudioFocus(null,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+        }else{
+            result = audioManager.abandonAudioFocus(null);
         }
-
-    }
-
-    public void unregisterNetBroadcastReceiver(Context context){
-        if(netBroadcastReceiver != null){
-            context.unregisterReceiver(netBroadcastReceiver);
-        }
-        netBroadcastReceiver = null;
-    }
-
-    public void onResume(){
-        registerNetBroadcastReceiver(getContext());
-        if(isInBackground && videoControllerView.getErrorType() == VideoErrorView.NO_ERROR && (playerState == STATE_PLAYER_STOP ||playerState == STATE_PLAYER_PAUSE)){
-            //createSurface();
-            restart();
-        }
-        Log.i(TAG, "onResume: position = "+position);
-        isInBackground = false;
-    }
-
-    public void onStop(){
-        isInBackground = true;
-        unregisterNetBroadcastReceiver(getContext());
-    }
-    public void onDestroy(){
-        player.stop();
-        player.release();
-        unregisterNetBroadcastReceiver(getContext());
+        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
 }

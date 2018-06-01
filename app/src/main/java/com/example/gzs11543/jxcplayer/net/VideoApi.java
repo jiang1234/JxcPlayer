@@ -1,6 +1,6 @@
 package com.example.gzs11543.jxcplayer.net;
 
-import android.print.PrinterId;
+
 
 import com.example.gzs11543.jxcplayer.bean.VideoBean;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
