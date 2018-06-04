@@ -7,6 +7,7 @@ import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 
 
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -44,8 +45,10 @@ public class VideoApi {
         return service.getVideoList();
     }
 
-    public Observable<VideoBean> getMoreVideoInfo(String pageId){
-        return service.getMoreVideoList(pageId);
+    public Single<VideoBean> getMoreVideoInfo(String pageId){
+
+        Single<VideoBean> a =  service.getMoreVideoList(pageId);
+        return a;
     }
 
 

@@ -5,10 +5,15 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.util.DisplayMetrics;
 
+import com.squareup.leakcanary.LeakCanary;
+import com.squareup.leakcanary.RefWatcher;
+
 public class MyApplication extends Application {
     private static Context context;
     private static int width;
     private static int height;
+    private RefWatcher refWatcher;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -18,6 +23,7 @@ public class MyApplication extends Application {
         float density = dm.density;
         width = dm.widthPixels;
         height = dm.heightPixels;
+        setupLeakCanary();
     }
 
     public static Context getContext() {
@@ -30,5 +36,13 @@ public class MyApplication extends Application {
 
     public static int getHeight() {
         return height;
+    }
+
+    protected void setupLeakCanary(){
+        if(LeakCanary.isInAnalyzerProcess(this)){
+            return;
+
+        }
+        refWatcher = LeakCanary.install(this);
     }
 }

@@ -1,5 +1,7 @@
 package com.example.gzs11543.jxcplayer;
 
+import android.os.AsyncTask;
+import android.os.SystemClock;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -100,6 +102,9 @@ public class ListActivity extends BaseActivity<ListPresenter>{
         presenter = new ListPresenter(videoApi);
 
     }
+
+
+
 
 
 }

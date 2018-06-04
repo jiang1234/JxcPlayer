@@ -189,17 +189,19 @@ public class VideoControllerView extends GestureDetectorView {
 
         videoErrorView.setNetworkState(networkState);
         Log.i(TAG, "networkStateChanged: networkState = " + networkState);
+        Log.i(TAG, "networkStateChanged: videoErrorView.getErrorType() = " + videoErrorView.getErrorType());
         if(networkState == NetworkBroadcastReceiver.NO_INTERNET){
             //没有网络直接提出无网络并显示错误信息,停止播放
             videoControlListener.stopVideo();
             videoErrorView.changeErrorView(VideoErrorView.ERROR_TYPE_NO_INTERNET);
             hideControllerView();
         }else if(networkState == NetworkBroadcastReceiver.INTERENT_STATE_MOBILE){
-            if(videoErrorView.getErrorType() == VideoErrorView.NO_ERROR){
-                //网络状态从wifi转为移动
-                videoControlListener.pauseVideo();
+           // if(videoErrorView.getErrorType() == VideoErrorView.NO_ERROR){
+                //网络状态从wifi转为移动,或者是直接就是移动网络
+                videoControlListener.stopVideo();
                 videoErrorView.changeErrorView(VideoErrorView.ERROR_TYPE_MOBILE_INTERNET);
-            }
+                hideControllerView();
+          //  }
         }
 
     }
@@ -219,16 +221,23 @@ public class VideoControllerView extends GestureDetectorView {
         videoControlListener.updateVideoPosition();
         Log.i(TAG, "updatePosition: updatePosition=" + StringUtil.stringToTime(position));
         seekBar.setProgress(position);
-        // seekBar.setSecondaryProgress(duration*bufferPercentage);
         String durationTime = StringUtil.stringToTime(position) + "/" + StringUtil.stringToTime(duration);
-        // Log.i(TAG, "updatePosition: position" +StringUtil.stringToTime(position) +"duration"+ "/" + StringUtil.stringToTime(duration));
         durationTextView.setText(durationTime);
     }
 
     public void hideStartView(){
-        coverImageView.setVisibility(View.GONE);
-        centerPlayButton.setVisibility(View.GONE);
-        controllerBackground.setVisibility(View.GONE);
+        if(coverImageView.getVisibility() == VISIBLE){
+            coverImageView.setVisibility(View.GONE);
+        }
+
+        if(centerPlayButton.getVisibility() == View.VISIBLE){
+            centerPlayButton.setVisibility(View.GONE);
+        }
+
+        if(controllerBackground.getVisibility() == VISIBLE){
+            controllerBackground.setVisibility(View.GONE);
+        }
+
     }
     public void showFinishView(){
         hideControllerBottom();
@@ -298,9 +307,7 @@ public class VideoControllerView extends GestureDetectorView {
     }
 
     public void hideControllerView(){
-        if(centerPlayButton.getVisibility() == View.VISIBLE){
-            centerPlayButton.setVisibility(View.GONE);
-        }
+        hideStartView();
         hideFinishView();
         hideControllerBottom();
         removeCallbacks(showRunnable);
@@ -453,6 +460,13 @@ public class VideoControllerView extends GestureDetectorView {
 
     public void setPortrait(boolean portrait) {
         isPortrait = portrait;
+    }
+
+    public void onDestroy(){
+        removeCallbacks(showRunnable);
+        removeCallbacks(hideRunnable);
+        showRunnable = null;
+        hideRunnable = null;
     }
 
 }

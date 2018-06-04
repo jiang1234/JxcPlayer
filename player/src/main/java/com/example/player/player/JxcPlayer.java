@@ -41,6 +41,8 @@ import java.io.IOException;
  */
 public class JxcPlayer extends RelativeLayout {
     private static final String TAG = "JxcPlayer";
+    public static final int STATE_SURFACEVIEW_CREATE = -2;
+    public static final int STATE_SURFACEVIEW_DESTROY = -1;
     public static final int STATE_PLAYER_IDLE = 0;
     public static final int STATE_PLAYER_PEEPARING = 1;
     public static final int STATE_PLAYER_ERROR = 2;
@@ -68,6 +70,7 @@ public class JxcPlayer extends RelativeLayout {
     private boolean isPause;
     private PlayerListener playerListener;
     private NetworkBroadcastReceiver netBroadcastReceiver;
+    private int surfaceViewState;
 
     public JxcPlayer(@NonNull Context context) {
         this(context,null);
@@ -141,7 +144,7 @@ public class JxcPlayer extends RelativeLayout {
             }
             @Override
             public void updateVideoPosition(){
-                Log.i(TAG, "updateVideoPosition: ");
+               // Log.i(TAG, "updateVideoPosition: ");
                 if(playerState == STATE_PLAYER_PLAY || playerState == STATE_PLAYER_PAUSE){
                     position = player.getCurrentPosition();
                     videoControllerView.setPosition(position);
@@ -194,14 +197,21 @@ public class JxcPlayer extends RelativeLayout {
         player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
-                setPlayerState(STATE_PLAYER_PREPARED);
-                player.setDisplay(holder);
-                Log.i(TAG, "onPrepared:getDuration getDuration getDurationgetDuration ");
-                duration = player.getDuration();
-                videoControllerView.setSeekBarMax(duration);
-                if(!isPause){
-                    play();
-                }
+                //if(playerState == STATE_PLAYER_PEEPARING){
+                    setPlayerState(STATE_PLAYER_PREPARED);
+
+
+                    Log.i(TAG, "onPrepared:getDuration getDuration getDurationgetDuration ");
+                    duration = player.getDuration();
+                    if(holder != null){
+                        player.setDisplay(holder);
+                    }
+                    videoControllerView.setSeekBarMax(duration);
+                    if(!isPause){
+                        play();
+                    }
+                //}
+
             }
         });
 
@@ -209,7 +219,7 @@ public class JxcPlayer extends RelativeLayout {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 Log.i(TAG, "onCompletion: 2");
-                if(playerState != STATE_PLAYER_ERROR){
+                if(playerState != STATE_PLAYER_ERROR && surfaceViewState != STATE_SURFACEVIEW_DESTROY){
                     setPlayerState(STATE_PLAYER_COMPLETE);
                     videoControllerView.showFinishView();
                 }
@@ -221,8 +231,12 @@ public class JxcPlayer extends RelativeLayout {
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 Log.i(TAG, "onError: what=" + what +"extra="+extra);
                 setPlayerState(STATE_PLAYER_ERROR);
-                loadingView.setVisibility(GONE);
-                videoControllerView.showError();
+                if(surfaceViewState != STATE_SURFACEVIEW_DESTROY){
+
+                    loadingView.setVisibility(GONE);
+                    videoControllerView.showError();
+                }
+
                 return false;
             }
         });
@@ -284,27 +298,29 @@ public class JxcPlayer extends RelativeLayout {
             holder.addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
-                    //setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
+                    setSurfaceViewState(STATE_SURFACEVIEW_CREATE);
                     //drawCover(bitmap);
 
                 }
 
                 @Override
                 public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+                    //if(holder != null){
+                        player.setDisplay(holder);
+                   // }
                 }
 
                 @Override
                 public void surfaceDestroyed(SurfaceHolder holder) {
 
                     //activity切到后台之后会调用
-                    if(playerState == STATE_PLAYER_PLAY){
+                   // if(playerState == STATE_PLAYER_PLAY){
                         position = player.getCurrentPosition();
                         Log.i(TAG, "surfaceDestroyed: position=" + position);
-                        stop();//在此释放了player
-                    }
+                        //在此释放了player
+                   // }
                     Log.i(TAG, "surfaceDestroyed: position=" + position);
-                    //setSurfaceViewState(STATE_SURFACEVIEW_DESTROY);
+                    setSurfaceViewState(STATE_SURFACEVIEW_DESTROY);
                 }
             });
         }
@@ -316,8 +332,9 @@ public class JxcPlayer extends RelativeLayout {
     public void play(){
         setPlayerState(STATE_PLAYER_PLAY);
         isPause = false;
-        if(position != 0 && position != duration){
+        if(position != 0 && position != duration ){
             player.seekTo(position);
+
         }
         player.start();
     }
@@ -329,7 +346,8 @@ public class JxcPlayer extends RelativeLayout {
     }
 
     public void stop(){
-        if(player != null && player.isPlaying()){
+        if(player != null){
+            Log.i(TAG, "stop: ");
             player.stop();
             player.release();
 
@@ -356,7 +374,7 @@ public class JxcPlayer extends RelativeLayout {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        muteAudioFocus(getContext(),true);
+        muteAudioFocus(getContext().getApplicationContext(),true);
         player.prepareAsync();
         setPlayerState(STATE_PLAYER_PEEPARING);
     }
@@ -372,6 +390,9 @@ public class JxcPlayer extends RelativeLayout {
 
     public void restart(){
         initPlayer();
+        if(surfaceViewState == STATE_SURFACEVIEW_DESTROY){
+            createSurface();
+        }
         prepare();
     }
 
@@ -425,16 +446,27 @@ public class JxcPlayer extends RelativeLayout {
      */
     public void onResume(){
         registerNetBroadcastReceiver(getContext());
-        if(isInBackground && videoControllerView.getErrorType() == VideoErrorView.NO_ERROR && (playerState == STATE_PLAYER_STOP ||playerState == STATE_PLAYER_PAUSE)){
+        if(isInBackground && playerState != STATE_PLAYER_COMPLETE){
             restart();
+        }
+        if(playerState == STATE_PLAYER_COMPLETE){
+            videoControllerView.showFinishView();
         }
         Log.i(TAG, "onResume: position = "+position);
         isInBackground = false;
     }
 
     public void onStop(){
+        if(playerState == STATE_PLAYER_COMPLETE){
+            videoControllerView.hideFinishView();
+        }else{
+            Log.i(TAG, "onStop: ");
+            stop();
+            setPlayerState(STATE_PLAYER_IDLE);
+        }
+
         isInBackground = true;
-        muteAudioFocus(getContext(),false);
+        muteAudioFocus(getContext().getApplicationContext(),false);
         unregisterNetBroadcastReceiver(getContext());
     }
     public void onDestroy(){
@@ -444,6 +476,8 @@ public class JxcPlayer extends RelativeLayout {
         }
         player = null;
         unregisterNetBroadcastReceiver(getContext());
+        videoControllerView.onDestroy();
+        videoControllerView = null;
     }
 
     /**
@@ -490,6 +524,10 @@ public class JxcPlayer extends RelativeLayout {
 
     public void setPortrait(boolean portrait) {
         isPortrait = portrait;
+    }
+
+    public void setSurfaceViewState(int surfaceViewState){
+        this.surfaceViewState = surfaceViewState;
     }
 
     /**

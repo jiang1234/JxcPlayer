@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.example.gzs11543.jxcplayer.net.VideoApi;
 import com.example.gzs11543.jxcplayer.presenter.ListPresenter;
+import com.trello.rxlifecycle2.components.support.RxAppCompatActivity;
 
 import butterknife.ButterKnife;
 
@@ -14,7 +15,7 @@ import butterknife.ButterKnife;
  * @date 2018/05/23
  *
  */
-public abstract class BaseActivity<T extends BasePresenter> extends AppCompatActivity {
+public abstract class BaseActivity<T extends BasePresenter> extends RxAppCompatActivity {
     protected T presenter ;
 
     @Override
@@ -31,7 +32,7 @@ public abstract class BaseActivity<T extends BasePresenter> extends AppCompatAct
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        presenter.detachView();
+        detachView();
     }
 
 

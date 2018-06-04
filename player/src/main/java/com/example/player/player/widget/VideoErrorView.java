@@ -25,6 +25,7 @@ public class VideoErrorView extends LinearLayout {
     private int networkState;
     private View errorView;
     private int errorType;
+    private boolean allowMobileNetwork;
 
 
     public VideoErrorView(Context context) {
@@ -62,8 +63,9 @@ public class VideoErrorView extends LinearLayout {
                         changeErrorView(NO_ERROR);
                         break;
                     case ERROR_TYPE_MOBILE_INTERNET:
-                        videoControlListener.startVideo();
+                        videoControlListener.restartVideo();
                         errorView.setVisibility(View.GONE);
+                        allowMobileNetwork = true;
                         break;
                     default:break;
                 }

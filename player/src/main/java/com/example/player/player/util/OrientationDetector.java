@@ -97,7 +97,7 @@ public class OrientationDetector {
         if(instance == null){
             synchronized (OrientationDetector.class){
                 if(instance == null){
-                    instance = new OrientationDetector(context);
+                    instance = new OrientationDetector(context.getApplicationContext());
                 }
             }
         }

@@ -3,6 +3,7 @@ package com.example.gzs11543.jxcplayer.net;
 import com.example.gzs11543.jxcplayer.bean.VideoBean;
 
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
 
@@ -20,5 +21,5 @@ public interface VideoApiServer {
     Observable<VideoBean> getVideoList();
 
     @GET("waterfall_list?client=android")
-    Observable<VideoBean> getMoreVideoList(@Query("page") String page);
+    Single<VideoBean> getMoreVideoList(@Query("page") String page);
 }

@@ -113,5 +113,6 @@ public class VideoActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         jxcPlayer.onDestroy();
+
     }
 }
